@@ -56,7 +56,7 @@ uint8_t keypad_data = 0xFF;
 uint8_t keypad_buffer[KEYPAD_RB_LEN];
 ring_buffer_t keypad_rb;
 
-#define USART2_RB_LEN 4
+#define USART2_RB_LEN 6
 uint8_t usart2_data = 0xFF;
 uint8_t usart2_buffer[USART2_RB_LEN];
 ring_buffer_t usart2_rb;
@@ -85,8 +85,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	if (huart->Instance == USART2) {
 		if (usart2_data >= '0' && usart2_data <= '9') {
 			ring_buffer_write(&usart2_rb, usart2_data);
-			if (ring_buffer_is_full(&keypad_rb) != 0) {
-
+			if (ring_buffer_size(&keypad_rb) == 4) {
+				printf("CUATRO!!: %c\r\n");
 			}
 		}
 		HAL_UART_Receive_IT(&huart2, &usart2_data, 1);
@@ -102,8 +102,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	uint8_t key_pressed = keypad_scan(GPIO_Pin);
 	if (key_pressed != 0xFF) {
 		ring_buffer_write(&keypad_rb, keypad_data);
-		if (ring_buffer_is_full(&keypad_rb) != 0) {
 
+		if (ring_buffer_is_full(&keypad_rb) != 0) {
+			printf("ENTER: %c\r\n", key_pressed);
 		}
 	}
 }

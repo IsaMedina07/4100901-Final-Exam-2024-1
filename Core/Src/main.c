@@ -88,7 +88,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		if (usart2_data >= '0' && usart2_data <= '9') {
 			ring_buffer_write(&usart2_rb, usart2_data);
 			if (ring_buffer_is_full(&usart2_rb) != 0) {
-				printf("TEC FULL: %c\r\n", usart2_data);
+				printf("LAST TEC: %c\r\n", usart2_data);
 				if(usart2_data == '#'){
 					ring_buffer_reset(&usart2_rb);
 				}
@@ -102,7 +102,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if (GPIO_Pin == B1_Pin) {
 		button = 1;
-		printf("PRESSS!!: %c\r\n");
 		return;
 	}
 	uint8_t key_pressed = keypad_scan(GPIO_Pin);
@@ -111,7 +110,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 		printf("ENTER KEY: %c\r\n", key_pressed);
 		if (ring_buffer_is_full(&keypad_rb) != 0) {
-			printf("KEY FULL: %c\r\n");
+			printf("LAST KEY: %c\r\n", key_pressed);
 			if(key_pressed == '*'){
 				ring_buffer_reset(&keypad_rb);
 			}
@@ -157,8 +156,8 @@ int main(void)
   ring_buffer_init(&keypad_rb, keypad_buffer, KEYPAD_RB_LEN);
   /* USER CODE BEGIN 2 */
   ssd1306_Init();
-  ssd1306_Fill(Black);
-  ssd1306_SetCursor(20, 20);
+  ssd1306_FillRectangle(37, 50, 97, 20, Black);
+  ssd1306_SetCursor(40, 30);
   ssd1306_WriteString("Welcome!", Font_7x10, White);
   ssd1306_UpdateScreen();
 
@@ -170,15 +169,15 @@ int main(void)
   printf("Starting\r\n");
   while (1)
   {
+	  // Se almacean todos los datos en el array data
+	  	  static uint8_t data[10];
+
 	  // Si los dos ring buffers están llenos, se leen todos los datos
 	  while (ring_buffer_is_full(&usart2_rb) == 1 && ring_buffer_is_full(&keypad_rb) == 1) {
-
+		  printf("ENTRÉ !! : %c\r\n");
 	// Se guarda el último valor de cada ring buffer
 	  uint8_t read_key;
 	  uint8_t read_tec;
-
-	  // Se almacean todos los datos en el array data
-	  uint8_t data[10];
 
 	  // Se realiza un recorrido del total de los datos en cada ring buffer
 	  for (uint8_t i = 0; i <= 10; i++){
@@ -194,10 +193,12 @@ int main(void)
 			  }
 	  };
 
+	  }
 	  // Verificamos si el botón fue presionado
 	  if(button == 1){
+		  printf("PRESSS!!: %c\r\n");
 		  // Se llama la función para hacer la suma y se guarda en la variable suma
-		  uint8_t suma = keypad_sum(&data);
+		  uint8_t suma = keypad_sum(data);
 		  printf("SUMA TOTAL: %c\r\n", suma);
 
 		  // Si hay algo escrito, se borra:
@@ -215,8 +216,7 @@ int main(void)
 		  }else{
 			  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 		  }
-	  }
-
+		  button = 0;
 	  }
     /* USER CODE END WHILE */
 

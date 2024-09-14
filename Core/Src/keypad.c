@@ -94,9 +94,10 @@ uint8_t keypad_scan(uint16_t GPIO_Pin)
 }
 
 uint8_t keypad_sum( uint8_t *data){
-	uint8_t suma = 0;
+	uint32_t suma = 0;
 	for (uint8_t i = 0; i < 10; i++){
-		suma += data[i];
+		printf("SUMA: %d\r\n", suma);
+		suma += data[i] - '0';
 	}
 	return suma;
 }

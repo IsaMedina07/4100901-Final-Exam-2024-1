@@ -198,8 +198,8 @@ int main(void)
 	  if(button == 1){
 		  printf("PRESSS!!: %c\r\n");
 		  // Se llama la función para hacer la suma y se guarda en la variable suma
-		  uint8_t suma = keypad_sum(data);
-		  printf("SUMA TOTAL: %c\r\n", suma);
+		  uint32_t suma = keypad_sum(data);
+		  printf("SUMA TOTAL: %d\r\n", suma);
 
 		  // Si hay algo escrito, se borra:
 		  ssd1306_FillRectangle(37, 50, 97, 20, Black);

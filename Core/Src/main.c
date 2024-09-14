@@ -60,6 +60,8 @@ ring_buffer_t keypad_rb;
 uint8_t usart2_data = 0xFF;
 uint8_t usart2_buffer[USART2_RB_LEN];
 ring_buffer_t usart2_rb;
+
+uint8_t button = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -85,8 +87,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	if (huart->Instance == USART2) {
 		if (usart2_data >= '0' && usart2_data <= '9') {
 			ring_buffer_write(&usart2_rb, usart2_data);
-			if (ring_buffer_size(&keypad_rb) == 4) {
-				printf("CUATRO!!: %c\r\n");
+			if (ring_buffer_is_full(&usart2_rb) != 0) {
+				printf("ENTER TEC: %c\r\n", usart2_data);
+				if(usart2_data == '#'){
+					ring_buffer_reset(&usart2_rb);
+				}
 			}
 		}
 		HAL_UART_Receive_IT(&huart2, &usart2_data, 1);
@@ -96,7 +101,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if (GPIO_Pin == B1_Pin) {
-
+		button = 1;
+		printf("PRESSS!!: %c\r\n");
 		return;
 	}
 	uint8_t key_pressed = keypad_scan(GPIO_Pin);
@@ -104,7 +110,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		ring_buffer_write(&keypad_rb, keypad_data);
 
 		if (ring_buffer_is_full(&keypad_rb) != 0) {
-			printf("ENTER: %c\r\n", key_pressed);
+			printf("ENTER KEY: %c\r\n", key_pressed);
+			if(key_pressed == '*'){
+				ring_buffer_reset(&keypad_rb);
+			}
+
 		}
 	}
 }
@@ -156,6 +166,45 @@ int main(void)
   printf("Starting\r\n");
   while (1)
   {
+	  while (ring_buffer_is_full(&usart2_rb) == 1 && ring_buffer_is_full(&keypad_rb) == 1) {
+	printf("INTO: %c\r\n");
+	  uint8_t read_key;
+	  uint8_t read_tec;
+
+	  uint8_t data[10];
+
+	  for (uint8_t i = 0; i <= 10; i++){
+	  		  if(i >= 0 && i <4){
+	  			ring_buffer_read(&keypad_rb, &read_key);
+	  			data[i] = read_key;
+	  		  }
+	  		if(i >= 4 && i <10){
+	  			ring_buffer_read(&usart2_rb, &read_tec);
+				data[i] = read_tec;
+			  }
+	  };
+
+	  if(button == 1){
+		  uint8_t suma = keypad_sum(&data);
+		  printf("SUMA TOTAL: %c\r\n", suma);
+
+		  // Si hay algo escrito, se borra:
+		  ssd1306_FillRectangle(37, 50, 97, 20, Black);
+		  ssd1306_SetCursor(40, 30);
+		  ssd1306_UpdateScreen();
+
+		  // Se escribe el mensaje
+		  ssd1306_WriteString("Success!", Font_7x10, White);
+		  ssd1306_UpdateScreen();
+
+		  if(suma%2 == 0){
+			  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+		  }else{
+			  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+		  }
+	  }
+
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
